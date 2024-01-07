@@ -1,3 +1,4 @@
 var addon = require("bindings")("addon");
 
-console.log(addon.hello()); // 'world'
+const helloAddon = new addon.HelloAddon();
+console.log(helloAddon.hello()); // 'world'

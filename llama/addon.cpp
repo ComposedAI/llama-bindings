@@ -1,15 +1,30 @@
 #include <napi.h>
+#include <llama.h>
 
-Napi::String Method(const Napi::CallbackInfo &info)
+class HelloAddon : public Napi::ObjectWrap<HelloAddon>
 {
-    Napi::Env env = info.Env();
-    return Napi::String::New(env, "world");
-}
+public:
+    static Napi::Object Init(Napi::Env env, Napi::Object exports)
+    {
+        Napi::Function func = DefineClass(env, "HelloAddon", {InstanceMethod("hello", &HelloAddon::Hello)});
+
+        exports.Set("HelloAddon", func);
+        return exports;
+    }
+
+    HelloAddon(const Napi::CallbackInfo &info) : Napi::ObjectWrap<HelloAddon>(info) {}
+
+private:
+    Napi::Value Hello(const Napi::CallbackInfo &info)
+    {
+        Napi::Env env = info.Env();
+        return Napi::String::New(env, "world");
+    }
+};
 
 Napi::Object Init(Napi::Env env, Napi::Object exports)
 {
-    exports.Set(Napi::String::New(env, "hello"), Napi::Function::New(env, Method));
-    return exports;
+    return HelloAddon::Init(env, exports);
 }
 
 NODE_API_MODULE(addon, Init)
