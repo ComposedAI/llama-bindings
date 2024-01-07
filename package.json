@@ -4,7 +4,10 @@
   "description": "Node bindings for llama",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "node-gyp rebuild && tsc",
+    "build:debug": "node-gyp rebuild --debug && tsc",
+    "build:release": "node-gyp rebuild --release && tsc",
+    "clean": "node-gyp clean && rm -rf ./dist",
     "start": "node ./dist/index.js",
     "prettier": "prettier --write \"src/**/*.ts\"",
     "prettier:check": "prettier --check \"src/**/*.ts\"",
