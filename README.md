@@ -15,7 +15,7 @@ npm install llama-bindings
 ## Usage
 
 ```javascript
-const llama = require("llama-bindings");
+let addon = require("bindings")("llama-addon");
 
 // Load the model
 const model = llama.loadModel("path/to/model");

@@ -22,7 +22,7 @@ add_subdirectory("libs/llama.cpp")
 include_directories("libs/llama.cpp")
 include_directories("./libs/llama.cpp/common")
 
-file(GLOB SOURCE_FILES "addon.cpp")
+file(GLOB SOURCE_FILES "src/addon.cpp")
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
