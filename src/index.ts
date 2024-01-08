@@ -1,4 +1,8 @@
-var addon = require("bindings")("addon");
+import path from "path";
 
-const helloAddon = new addon.HelloAddon();
-console.log(helloAddon.hello()); // 'world'
+var addon = require("bindings")("llama-addon");
+
+const modelPath = path.resolve("models/mistral-7b-instruct-v0.2.Q4_0.gguf");
+
+const model = new addon.LLAMAModel(modelPath);
+console.dir(model, { depth: null });

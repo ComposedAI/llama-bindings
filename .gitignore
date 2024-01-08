@@ -1,3 +1,6 @@
+# language models
+models/
+
 # Logs
 logs
 *.log
@@ -57,6 +60,7 @@ Thumbs.db
 
 # Dependency directories
 node_modules/
+libs/
 jspm_packages/
 npm-debug.log
 
