@@ -39,7 +39,6 @@ public:
             }
         }
 
-        llama_backend_init(false);
         model = llama_load_model_from_file(modelPath.c_str(), model_params);
 
         if (model == NULL)
@@ -60,8 +59,17 @@ public:
     }
 };
 
+Napi::Value systemInfo(const Napi::CallbackInfo &info)
+{
+    return Napi::String::From(info.Env(), llama_print_system_info());
+}
+
 Napi::Object Init(Napi::Env env, Napi::Object exports)
 {
+    llama_backend_init(false);
+    exports.DefineProperties({
+        Napi::PropertyDescriptor::Function("getSystemInfo", systemInfo),
+    });
     LLAMAModel::init(exports);
     return exports;
 }
