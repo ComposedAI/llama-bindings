@@ -1,7 +1,7 @@
 {
-  "name": "node-llama",
+  "name": "llama-bindings",
   "version": "0.0.1",
-  "description": "Node bindings for llama",
+  "description": "Node bindings for llama.cpp",
   "main": "./dist/index.js",
   "scripts": {
     "build": "cmake-js rebuild && tsc",
