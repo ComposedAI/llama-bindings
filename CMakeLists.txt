@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project("llama-addon" C CXX)
+project("llama-bindings" C CXX)
 
 if (MSVC)
   # add_compile_options(/EHsc)
