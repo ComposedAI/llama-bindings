@@ -1,16 +1,37 @@
 import path from "path";
 
 const {
-  getSystemInfo,
-  loadModelFromFile,
-  getModelDesc,
+  llamaBackendInit,
+  llamaLoadModelFromFile,
+  llamaModelDesc,
+  llamaModelDefaultParams,
+  llamaContextDefaultParams,
+  llamaNewContextWithModel,
 }: typeof import("llama-bindings") = require("bindings")("llama-bindings");
 
 const modelPath = path.resolve("models/mistral-7b-instruct-v0.2.Q4_0.gguf");
 
-const systemInfo = getSystemInfo();
-const model = loadModelFromFile(modelPath, {});
-const modelDesc = getModelDesc(model);
+// init LLM backend
+llamaBackendInit(false);
 
-console.dir(systemInfo, { depth: null });
+// initialize the model
+const params = llamaModelDefaultParams();
+const model = llamaLoadModelFromFile(modelPath, params);
+
+if (!model) {
+  console.error(`error: unable to load model`);
+  process.exit(1);
+}
+
+const modelDesc = llamaModelDesc(model);
 console.dir(`model description: ${modelDesc}`);
+
+// initialize the context
+const ctx_params = llamaContextDefaultParams();
+
+// ctx_params.seed = 1234;
+// ctx_params.n_ctx = 2048;
+// ctx_params.n_threads = params.n_threads;
+// ctx_params.n_threads_batch = params.n_threads_batch == -1 ? params.n_threads : params.n_threads_batch;
+
+const ctx = llamaNewContextWithModel(model, ctx_params);

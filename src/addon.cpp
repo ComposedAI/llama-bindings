@@ -24,12 +24,9 @@ Napi::Value LlamaLoadModelFromFile(const Napi::CallbackInfo &info)
     }
 
     Napi::String pathModel = info[0].As<Napi::String>();
-    Napi::Object params = info[1].As<Napi::Object>();
+    llama_model_params *params = info[1].As<Napi::External<llama_model_params>>().Data();
 
-    struct llama_model_params llamaParams;
-    // Fill llamaParams from params object
-
-    struct llama_model *result = llama_load_model_from_file(pathModel.Utf8Value().c_str(), llamaParams);
+    struct llama_model *result = llama_load_model_from_file(pathModel.Utf8Value().c_str(), *params);
 
     // Wrap the pointer in a Napi::External object and return it
     return Napi::External<llama_model>::New(env, result);
@@ -46,19 +43,86 @@ Napi::Value LlamaModelDesc(const Napi::CallbackInfo &info)
         return env.Null();
     }
 
-    Napi::External<llama_model> model = info[0].As<Napi::External<llama_model>>();
+    llama_model *model = info[0].As<Napi::External<llama_model>>().Data();
     char buf[1024]; // Adjust size as needed
-    llama_model_desc(model.Data(), buf, sizeof(buf));
+    llama_model_desc(model, buf, sizeof(buf));
 
     return Napi::String::New(env, buf);
 }
 
+Napi::Value LlamaModelDefaultParams(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    struct llama_model_params params = llama_model_default_params();
+    llama_model_params *result = new llama_model_params(params);
+    return Napi::External<llama_model_params>::New(env, result);
+}
+
+Napi::Value LlamaContextDefaultParams(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    struct llama_context_params params = llama_context_default_params();
+    llama_context_params *result = new llama_context_params(params);
+    return Napi::External<llama_context_params>::New(env, result);
+}
+
+Napi::Value LlamaModelQuantizeDefaultParams(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    struct llama_model_quantize_params params = llama_model_quantize_default_params();
+    llama_model_quantize_params *result = new llama_model_quantize_params(params);
+    return Napi::External<llama_model_quantize_params>::New(env, result);
+}
+
+void LlamaBackendInit(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    bool numa = info[0].As<Napi::Boolean>();
+    llama_backend_init(numa);
+}
+
+void LlamaBackendFree(const Napi::CallbackInfo &info)
+{
+    llama_backend_free();
+}
+
+void LlamaFreeModel(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    llama_model *model = info[0].As<Napi::External<llama_model>>().Data();
+    llama_free_model(model);
+}
+
+Napi::Value LlamaNewContextWithModel(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    llama_model *model = info[0].As<Napi::External<llama_model>>().Data();
+    llama_context_params *params = info[1].As<Napi::External<llama_context_params>>().Data();
+    struct llama_context *ctx = llama_new_context_with_model(model, *params);
+    return Napi::External<llama_context>::New(env, ctx);
+}
+
+void LlamaFree(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    llama_context *ctx = info[0].As<Napi::External<llama_context>>().Data();
+    llama_free(ctx);
+}
+
 Napi::Object Init(Napi::Env env, Napi::Object exports)
 {
-    exports.Set(Napi::String::New(env, "getSystemInfo"),
+    exports.Set(Napi::String::New(env, "systemInfo"),
                 Napi::Function::New(env, systemInfo));
-    exports.Set("loadModelFromFile", Napi::Function::New(env, LlamaLoadModelFromFile));
-    exports.Set("getModelDesc", Napi::Function::New(env, LlamaModelDesc));
+    exports.Set("llamaLoadModelFromFile", Napi::Function::New(env, LlamaLoadModelFromFile));
+    exports.Set("llamaModelDesc", Napi::Function::New(env, LlamaModelDesc));
+    exports.Set("llamaModelDefaultParams", Napi::Function::New(env, LlamaModelDefaultParams));
+    exports.Set("llamaContextDefaultParams", Napi::Function::New(env, LlamaContextDefaultParams));
+    exports.Set("llamaModelQuantizeDefaultParams", Napi::Function::New(env, LlamaModelQuantizeDefaultParams));
+    exports.Set("llamaBackendInit", Napi::Function::New(env, LlamaBackendInit));
+    exports.Set("llamaBackendFree", Napi::Function::New(env, LlamaBackendFree));
+    exports.Set("llamaFreeModel", Napi::Function::New(env, LlamaFreeModel));
+    exports.Set("llamaNewContextWithModel", Napi::Function::New(env, LlamaNewContextWithModel));
+    exports.Set("llamaFree", Napi::Function::New(env, LlamaFree));
     return exports;
 }
 
