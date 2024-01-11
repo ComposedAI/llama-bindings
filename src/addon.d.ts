@@ -1,5 +1,21 @@
 declare module "llama-bindings" {
   export function systemInfo(): string;
+  export class LLAMAContext {
+    model_params: any; // Replace with the actual type
+    model: any; // Replace with the actual type
+
+    constructor(
+      modelPath: string,
+      options?: {
+        gpuLayers?: number;
+        vocabOnly?: boolean;
+        useMmap?: boolean;
+        useMlock?: boolean;
+      }
+    );
+
+    // Add any other methods here
+  }
   export function llamaLoadModelFromFile(
     pathModel: string,
     params: Buffer
