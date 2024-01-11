@@ -3,20 +3,29 @@ declare module "llama-bindings" {
   export function llamaLoadModelFromFile(
     pathModel: string,
     params: Buffer
-  ): Buffer;
-  export function llamaModelDesc(model: Buffer): string;
+  ): LlamaModel;
+  export function llamaModelDesc(model: LlamaModel): string;
   export function llamaModelDefaultParams(): Buffer;
   export function llamaContextDefaultParams(): Buffer;
   export function llamaModelQuantizeDefaultParams(): Buffer;
   export function llamaBackendInit(numa: boolean): void;
   export function llamaBackendFree(): void;
-  export function llamaFreeModel(model: Buffer): void;
+  export function llamaFreeModel(model: LlamaModel): void;
   export function llamaNewContextWithModel(
-    model: Buffer,
+    model: LlamaModel,
     params: Buffer
-  ): Buffer;
+  ): LlamaContext;
   export function llamaFree(ctx: Buffer): void;
+  export function llamaTokenize(
+    ctx: LlamaContext, // Replace with the actual type
+    text: string,
+    add_bos: boolean
+  ): number[];
+  export function llamaDecode(ctx: LlamaContext, tokens: number[]): string;
 }
+
+type LlamaModel = Buffer;
+type LlamaContext = Buffer;
 
 enum LlamaModelKVOverrideType {
   LLAMA_KV_OVERRIDE_INT,

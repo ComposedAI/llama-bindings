@@ -7,6 +7,8 @@ const {
   llamaModelDefaultParams,
   llamaContextDefaultParams,
   llamaNewContextWithModel,
+  llamaTokenize,
+  llamaDecode,
 }: typeof import("llama-bindings") = require("bindings")("llama-bindings");
 
 const modelPath = path.resolve("models/mistral-7b-instruct-v0.2.Q4_0.gguf");
@@ -35,3 +37,7 @@ const ctx_params = llamaContextDefaultParams();
 // ctx_params.n_threads_batch = params.n_threads_batch == -1 ? params.n_threads : params.n_threads_batch;
 
 const ctx = llamaNewContextWithModel(model, ctx_params);
+const tokens = llamaTokenize(ctx, "hello world", true);
+const decoded = llamaDecode(ctx, tokens);
+
+console.dir(decoded);

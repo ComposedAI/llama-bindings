@@ -1,4 +1,5 @@
 #include <napi.h>
+#include <common.h>
 #include <llama.h>
 
 Napi::Value systemInfo(const Napi::CallbackInfo &info)
@@ -109,6 +110,58 @@ void LlamaFree(const Napi::CallbackInfo &info)
     llama_free(ctx);
 }
 
+Napi::Value LlamaTokenize(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+
+    // Convert arguments from JavaScript to C++
+    const struct llama_context *ctx = info[0].As<Napi::External<llama_context>>().Data();
+
+    // Text to tokenize
+    const char *text = info[1].As<Napi::String>().Utf8Value().c_str();
+
+    // Other parameters
+    bool add_bos = info[2].As<Napi::Boolean>();
+    bool special = false;
+
+    // Call the function
+    std::vector<llama_token> tokens = llama_tokenize(ctx, text, add_bos);
+
+    Napi::Uint32Array result = Napi::Uint32Array::New(info.Env(), tokens.size());
+    for (size_t i = 0; i < tokens.size(); ++i)
+    {
+        result[i] = static_cast<uint32_t>(tokens[i]);
+    }
+
+    return result;
+}
+
+Napi::Value LlamaDecode(const Napi::CallbackInfo &info)
+{
+    // Convert arguments from JavaScript to C++
+    const struct llama_context *ctx = info[0].As<Napi::External<llama_context>>().Data();
+
+    Napi::Uint32Array tokens = info[1].As<Napi::Uint32Array>();
+
+    // Create a stringstream for accumulating the decoded string.
+    std::stringstream ss;
+
+    // Decode each token and accumulate the result.
+    for (size_t i = 0; i < tokens.ElementLength(); i++)
+    {
+        const std::string piece = llama_token_to_piece(ctx, (llama_token)tokens[i]);
+
+        if (piece.empty())
+        {
+            continue;
+        }
+
+        ss << piece;
+    }
+
+    return Napi::String::New(info.Env(), ss.str());
+}
+
 Napi::Object Init(Napi::Env env, Napi::Object exports)
 {
     exports.Set(Napi::String::New(env, "systemInfo"),
@@ -123,6 +176,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
     exports.Set("llamaFreeModel", Napi::Function::New(env, LlamaFreeModel));
     exports.Set("llamaNewContextWithModel", Napi::Function::New(env, LlamaNewContextWithModel));
     exports.Set("llamaFree", Napi::Function::New(env, LlamaFree));
+    exports.Set("llamaTokenize", Napi::Function::New(env, LlamaTokenize));
+    exports.Set("llamaDecode", Napi::Function::New(env, LlamaDecode));
     return exports;
 }
 
