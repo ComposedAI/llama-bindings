@@ -170,31 +170,132 @@ public:
         }
 
         // Convert the argument from JavaScript to C++
-        std::string text = info[0].As<Napi::String>().Utf8Value();
-
-        // Tokenize the input text
-        std::vector<llama_token> tokens = llama_tokenize(ctx, text, false);
+        std::string prompt = info[0].As<Napi::String>().Utf8Value();
 
         // Create a stringstream for accumulating the decoded string.
         std::stringstream ss;
 
-        // Loop over each token
-        for (llama_token token : tokens)
+        // total length of the sequence including the prompt
+        const int n_len = 32;
+
+        // tokenize the prompt
+
+        std::vector<llama_token> tokens_list;
+        tokens_list = ::llama_tokenize(ctx, prompt, true);
+
+        const int n_ctx = llama_n_ctx(ctx);
+        const int n_kv_req = tokens_list.size() + (n_len - tokens_list.size());
+
+        LOG_TEE("\n%s: n_len = %d, n_ctx = %d, n_kv_req = %d\n", __func__, n_len, n_ctx, n_kv_req);
+
+        // make sure the KV cache is big enough to hold all the prompt and generated tokens
+        if (n_kv_req > n_ctx)
         {
-            // Create a llama_token_data_array from the token
-            llama_token_data_array tokenArray;
-            tokenArray.data = reinterpret_cast<llama_token_data *>(&token);
-            tokenArray.size = 1;
-
-            // Sample a token greedily
-            llama_token sampledToken = llama_sample_token_greedy(ctx, &tokenArray);
-
-            // Convert the token to a piece
-            std::string piece = llama_token_to_piece(ctx, sampledToken);
-
-            // Add the piece to the stringstream
-            ss << piece;
+            Napi::Error::New(env, "n_kv_req > n_ctx, the required KV cache size is not big enough").ThrowAsJavaScriptException();
+            return env.Null();
         }
+
+        // print the prompt token-by-token
+
+        fprintf(stderr, "\n");
+
+        for (auto id : tokens_list)
+        {
+            fprintf(stderr, "%s", llama_token_to_piece(ctx, id).c_str());
+        }
+
+        fflush(stderr);
+
+        // create a llama_batch with size 512
+        // we use this object to submit token data for decoding
+
+        llama_batch batch = llama_batch_init(512, 0, 1);
+
+        // evaluate the initial prompt
+        for (size_t i = 0; i < tokens_list.size(); i++)
+        {
+            llama_batch_add(batch, tokens_list[i], i, {0}, false);
+        }
+
+        // llama_decode will output logits only for the last token of the prompt
+        batch.logits[batch.n_tokens - 1] = true;
+
+        if (llama_decode(ctx, batch) != 0)
+        {
+            Napi::Error::New(env, "%s: llama_decode() failed").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        // main loop
+
+        int n_cur = batch.n_tokens;
+        int n_decode = 0;
+
+        const auto t_main_start = ggml_time_us();
+
+        while (n_cur <= n_len)
+        {
+            // sample the next token
+            {
+                auto n_vocab = llama_n_vocab(model);
+                auto *logits = llama_get_logits_ith(ctx, batch.n_tokens - 1);
+
+                std::vector<llama_token_data> candidates;
+                candidates.reserve(n_vocab);
+
+                for (llama_token token_id = 0; token_id < n_vocab; token_id++)
+                {
+                    candidates.emplace_back(llama_token_data{token_id, logits[token_id], 0.0f});
+                }
+
+                llama_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
+
+                // sample the most likely token
+                const llama_token new_token_id = llama_sample_token_greedy(ctx, &candidates_p);
+
+                // is it an end of stream?
+                if (new_token_id == llama_token_eos(model) || n_cur == n_len)
+                {
+                    LOG_TEE("\n");
+
+                    break;
+                }
+
+                // Convert the token to a piece
+                std::string piece = llama_token_to_piece(ctx, new_token_id);
+
+                // Add the piece to the stringstream
+                ss << piece;
+
+                fflush(stdout);
+
+                // prepare the next batch
+                llama_batch_clear(batch);
+
+                // push this new token for next evaluation
+                llama_batch_add(batch, new_token_id, n_cur, {0}, true);
+
+                n_decode += 1;
+            }
+
+            n_cur += 1;
+
+            // evaluate the current batch with the transformer model
+            if (llama_decode(ctx, batch))
+            {
+                Napi::Error::New(env, "%s: failed to eval, return code %d").ThrowAsJavaScriptException();
+                return env.Null();
+            }
+        }
+
+        LOG_TEE("\n");
+
+        const auto t_main_end = ggml_time_us();
+
+        LOG_TEE("%s: decoded %d tokens in %.2f s, speed: %.2f t/s\n",
+                __func__, n_decode, (t_main_end - t_main_start) / 1000000.0f, n_decode / ((t_main_end - t_main_start) / 1000000.0f));
+
+        llama_print_timings(ctx);
 
         // Convert the result from C++ to JavaScript
         return Napi::String::New(env, ss.str());
