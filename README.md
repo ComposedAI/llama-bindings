@@ -24,3 +24,19 @@ const model = llama.loadModel("path/to/model");
 const result = model.run("This is a test");
 // Print the result
 ```
+
+## References and Acknowledgements
+
+### References
+
+- [Node API](https://nodejs.github.io/node-addon-examples/)
+- [Simple Guide to Node.js C++ Addons](https://medium.com/jspoint/a-simple-guide-to-load-c-c-code-into-node-js-javascript-applications-3fcccf54fd32)
+- [LLM to APIs](https://gorilla.cs.berkeley.edu/index.html)
+- [LLM for Function Calling](https://github.com/nexusflowai/NexusRaven-V2)
+- [Gorrila Open Functions](https://huggingface.co/gorilla-llm/gorilla-openfunctions-v1)
+
+### Acknowledgements
+
+- [node-llama-cpp](https://github.com/withcatai/node-llama-cpp.git)
+- [llama.cpp](https://github.com/ggerganov/llama.cpp)
+- [ollama](https://github.com/jmorganca/ollama)
