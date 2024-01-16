@@ -6,14 +6,9 @@ type LLAMABindings = typeof import("llama-bindings");
 const { LLAMAContext }: LLAMABindings = require("bindings")("llama-bindings");
 
 // const modelPath = path.resolve("models/mistral-7b-instruct-v0.2.Q4_0.gguf");
-const modelPath = path.resolve("models/llama-2-7b-chat.Q4_0.gguf");
+const modelPath = path.resolve("models/llama-2-7b-chat.Q4_K_M.gguf");
 
 const ctx = new LLAMAContext(modelPath);
-
-const tokens = ctx.encode("hello world");
-const decoded = ctx.decode(tokens);
-
-console.log(decoded);
 
 async function* evalGenerator(
   ctx: InstanceType<typeof LLAMAContext>,
@@ -36,7 +31,7 @@ async function* evalGenerator(
   }
 }
 
-const prompt = "Once upon a time";
+const prompt = "Write a short story about a robot learning to love.";
 
 // Evaluate the prompt.
 async function main() {
