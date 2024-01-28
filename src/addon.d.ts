@@ -6,6 +6,17 @@ declare module "llama-bindings" {
     useMlock?: boolean;
   };
 
+  export interface EvaluateParams {
+    temperature?: number;
+    top_k?: number;
+    top_p?: number;
+    repeat_penalty?: number;
+    repeat_penalty_presence_penalty?: number;
+    repeat_penalty_frequency_penalty?: number;
+    repeat_penalty_tokens?: Uint32Array;
+    use_repeat_penalty?: boolean;
+  }
+
   export function systemInfo(): string;
 
   export class LLAMAContext {
@@ -17,6 +28,6 @@ declare module "llama-bindings" {
     tokenBos(): number;
     tokenEos(): number;
     tokenN1(): number;
-    evaluate(input: Uint32Array): Promise<number>;
+    evaluate(input: Uint32Array, params?: EvaluateParams): Promise<number>;
   }
 }
